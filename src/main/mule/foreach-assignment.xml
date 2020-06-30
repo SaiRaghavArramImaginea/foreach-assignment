@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="753b782c-2d80-402b-b991-db7219243d75" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="a2310fd9-adec-4651-b2a9-da3e42f51f42" >
+		<file:connection workingDir="/home/sairaghav/AnypointStudio/studio-workspace/mule/outbound" />
+	</file:config>
+	<flow name="foreach-assignmentFlow" doc:id="997b2f22-1565-4167-a14f-16cf480a1a7d" >
+		<http:listener doc:name="Listener" doc:id="74bb6890-97a3-4af4-a734-375ce557f0ed" config-ref="HTTP_Listener_config" path="/load" outputMimeType="application/xml">
+			<http:response statusCode="#[vars.httpStatus default 200]">
+                <http:body ><![CDATA[#[output text/json ---
+{
+	statusCode : message.attributes.statusCode,
+	messaged : "Archived Successfully"
+}]]]></http:body>
+				<http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:error-response>
+		</http:listener>
+		<set-variable value="#[message.payload]" doc:name="Set Variable" doc:id="10f5d9ef-dfa2-4a8c-a6ea-9c5dccd26984" variableName="Request"/>
+		<logger level="INFO" doc:name="Logger" doc:id="7151d2c7-f3e7-427d-bbd5-e37be99e8d36" message="#[vars.Request]"/>
+		<foreach doc:name="For Each" doc:id="c25bed6a-b852-43d4-a9f9-a557fe53edb9" collection="#[vars.Request.ArchiveFiles.FileNames]">
+			<ee:transform doc:name="Transform Message" doc:id="d6977c58-dc17-4317-897e-03d196ded793">
+			<ee:message>
+			</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="Path" ><![CDATA[%dw 2.0
+output application/java
+---
+vars.Request.ArchiveFiles.FileSource as String
+]]></ee:set-variable>
+					<ee:set-variable variableName="FileName" ><![CDATA[%dw 2.0
+output application/json
+---
+payload.FileName]]></ee:set-variable>
+				</ee:variables>
+		</ee:transform>
+			<logger level="INFO" doc:name="Logger" doc:id="b8042e5d-f701-460c-a3c3-c89249e4fe38" message="Path - #[vars.Path] and FileName - #[vars.FileName]"/>
+			<file:copy doc:name="Copy" doc:id="b31332d3-7e40-4904-8c44-e0adba881fb7" config-ref="File_Config" targetPath="#[vars.Request.ArchiveFiles.FileTarget]" sourcePath="#[vars.Path ++ '/'  ++ vars.FileName]" overwrite="true" renameTo="#['copy'++ vars.FileName]"/>
+		</foreach>
+	</flow>
+</mule>

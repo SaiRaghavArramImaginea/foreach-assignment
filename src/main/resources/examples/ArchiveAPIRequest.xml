@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<ArchiveFiles>
+	<FileSource>/home/sairaghav/AnypointStudio/studio-workspace/mule/outbound</FileSource>
+	<FileTarget>/home/sairaghav/AnypointStudio/studio-workspace/mule/archive</FileTarget>
+	<FileNames>
+		<FileName>1.txt</FileName>
+		<FileName>2.txt</FileName>
+	</FileNames>
+</ArchiveFiles>
